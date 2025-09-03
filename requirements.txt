@@ -8,6 +8,3 @@ anomalib==2.1.0
 python-multipart
 Pillow
 opencv-python
-torch==2.8.0+cpu
-torchvision==0.18.1+cpu
-torchaudio==2.8.1+cpu
