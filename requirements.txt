@@ -248,7 +248,6 @@ python-json-logger==3.3.0
 python-multipart==0.0.20
 pytorch-lightning==2.5.4
 pytorch-triton-rocm==0.0.1
-pytorch-triton-xpu==3.4.0
 pytz==2025.2
 pywin32==311
 pywinpty==3.0.0
