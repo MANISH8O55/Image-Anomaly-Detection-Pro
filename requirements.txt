@@ -8,3 +8,4 @@ anomalib==2.1.0
 python-multipart
 Pillow
 opencv-python
+wget==3.2
