@@ -319,9 +319,9 @@ tinycss2==1.4.0
 tokenizers==0.22.0
 toml==0.10.2
 tomlkit==0.13.3
-torch==2.8.0
+torch==2.0.1+cpu
 torchmetrics==1.8.1
-torchvision==0.23.0
+torchvision==0.15.2+cpu
 tornado==6.5.2
 tox==4.27.0
 tqdm==4.67.1
