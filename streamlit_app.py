@@ -15,6 +15,10 @@ from torch.utils.data import DataLoader
 sys.path.append("./indad")
 from indad.data import IMAGENET_MEAN, IMAGENET_STD, MVTecDataset, StreamingDataset
 from indad.models import SPADE, PaDiM, PatchCore
+from indad.models import SPADE
+from indad.models import PaDiM
+from indad.models import PatchCore
+
 
 N_IMAGE_GALLERY = 4
 N_forwardIONS = 2
