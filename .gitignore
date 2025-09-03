@@ -1,0 +1,43 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter notebooks checkpoints
+notebooks/
+.ipynb_checkpoints/
+
+# Python compiled files
+*.pyc
+
+# Model files
+*.pt
+*.onnx
+*.h5
+*.pb
+*.ckpt
+
+# IDE settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# SARIF reports
+*.sarif
+
+# Virtual environment
+venv/
+.env/
+
+# Large archives
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# Streamlit cache
+.streamlit/
+
+.Images/
