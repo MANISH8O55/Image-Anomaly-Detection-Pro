@@ -12,12 +12,16 @@ from PIL import Image
 from streamlit.runtime.scriptrunner import get_script_run_ctx as REPORT_CONTEXT_ATTR_NAME
 from torch.utils.data import DataLoader
 
+# Gemini imports
+import google.generativeai as genai
+import base64
+
+# 🔑 Configure Gemini API
+genai.configure(api_key="AIzaSyBF6-es64u-bs8l8PAQ-4XwVUQ8zVgr1UM")
+
 sys.path.append("./indad")
 from indad.data import IMAGENET_MEAN, IMAGENET_STD, MVTecDataset, StreamingDataset
 from indad.models import SPADE, PaDiM, PatchCore
-from indad.models import SPADE
-from indad.models import PaDiM
-from indad.models import PatchCore
 
 
 N_IMAGE_GALLERY = 4
@@ -98,18 +102,15 @@ def main():
         app_custom_test_images = st.sidebar.file_uploader(
             "Select 1 or more TEST images.", accept_multiple_files=True
         )
-        # null other elements
         app_mvtec_dataset = None
     else:
         app_mvtec_dataset = st.sidebar.selectbox(
             "Choose an MVTec dataset", mvtec_classes
         )
-        # null other elements
         app_custom_train_images = []
         app_custom_test_images = None
 
     app_method = st.sidebar.selectbox("Choose a method", METHODS)
-
     app_backbone = st.sidebar.selectbox("Choose a backbone", BACKBONES)
 
     manualRange = st.sidebar.checkbox("Manually set color range", value=False)
@@ -118,6 +119,13 @@ def main():
         app_color_min = st.sidebar.number_input("set color min ", -1000, 1000, 0)
         app_color_max = st.sidebar.number_input("set color max ", -1000, 1000, 200)
         color_range = app_color_min, app_color_max
+
+    # 🔥 New Gemini custom prompt box
+    user_prompt = st.sidebar.text_area(
+        "Gemini Inspection Prompt",
+        value="Please describe any defects or anomalies in this asset image.",
+        height=100
+    )
 
     app_start = st.sidebar.button("Start")
 
@@ -128,23 +136,18 @@ def main():
         st.session_state.model = None
         st.session_state.reached_test_phase = False
         st.session_state.test_idx = 0
-        # test_cols = None
 
     if app_start or st.session_state.reached_test_phase:
         # LOAD DATA
-        # ---------
         if not st.session_state.reached_test_phase:
             flag_data_ok = False
             if app_custom_dataset:
                 if len(app_custom_train_images) > 2 and len(app_custom_test_images) > 0:
-                    # test dataset will contain 1 test image
                     train_dataset = StreamingDataset()
                     test_dataset = StreamingDataset()
-                    # train images
                     for training_image in app_custom_train_images:
                         bytes_data = training_image.getvalue()
                         train_dataset.add_pil_image(Image.open(io.BytesIO(bytes_data)))
-                    # test image
                     for test_image in app_custom_test_images:
                         bytes_data = test_image.getvalue()
                         test_dataset.add_pil_image(Image.open(io.BytesIO(bytes_data)))
@@ -177,19 +180,11 @@ def main():
             col.image(img, use_container_width=True)
 
         # LOAD MODEL
-        # ----------
-
         if not st.session_state.reached_test_phase:
             if app_method == "SPADE":
-                model = SPADE(
-                    k=3,
-                    backbone_name=app_backbone,
-                )
+                model = SPADE(k=3, backbone_name=app_backbone)
             elif app_method == "PaDiM":
-                model = PaDiM(
-                    d_reduced=75,
-                    backbone_name=app_backbone,
-                )
+                model = PaDiM(d_reduced=75, backbone_name=app_backbone)
             elif app_method == "PatchCore":
                 model = PatchCore(
                     f_coreset=0.01,
@@ -201,15 +196,11 @@ def main():
             model = st.session_state.model
 
         # TRAINING
-        # --------
-
         if not st.session_state.reached_test_phase:
             with st_stdout("info", "Setting up training ..."):
                 model.fit(DataLoader(train_dataset))
 
         # TESTING
-        # -------
-
         if not st.session_state.reached_test_phase:
             st.session_state.reached_test_phase = True
             st.session_state.sample_images = col_imgs
@@ -232,10 +223,34 @@ def main():
         st.write("pixel score min:{:.0f}".format(score_range[0]))
         st.write("pixel score max:{:.0f}".format(score_range[1]))
 
+        # ---------------- Gemini AI Explanation ----------------
+        st.subheader("💬 Gemini AI Explanation")
+
+        # Convert current sample image to PNG bytes
+        sample_img = (tensor_to_img(sample, normalize=True) * 255).astype(np.uint8)
+        pil_img = Image.fromarray(sample_img)
+        buffered = io.BytesIO()
+        pil_img.save(buffered, format="PNG")
+        image_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        # Call Gemini with custom user prompt
+        model_gemini = genai.GenerativeModel("gemini-1.5-flash")
+        response = model_gemini.generate_content(
+            [
+                {"role": "user", "parts": [
+                    {"text": f"{user_prompt}\n\n"
+                             f"(Anomaly detection model gave an image-level score of {img_lvl_anom_score:.2f}, "
+                             f"pixel-level range: {score_range})."},
+                    {"inline_data": {"mime_type": "image/png", "data": image_data}}
+                ]}
+            ]
+        )
+
+        st.success(response.text)
+
 
 @contextmanager
 def st_redirect(src, dst, msg):
-    """https://discuss.streamlit.io/t/cannot-print-the-terminal-output-in-streamlit/6602"""
     placeholder = st.info(msg)
     sleep(3)
     output_func = getattr(placeholder, dst)
@@ -260,14 +275,12 @@ def st_redirect(src, dst, msg):
 
 @contextmanager
 def st_stdout(dst, msg):
-    """https://discuss.streamlit.io/t/cannot-print-the-terminal-output-in-streamlit/6602"""
     with st_redirect(sys.stdout, dst, msg):
         yield
 
 
 @contextmanager
 def st_stderr(dst):
-    """https://discuss.streamlit.io/t/cannot-print-the-terminal-output-in-streamlit/6602"""
     with st_redirect(sys.stderr, dst):
         yield
 
