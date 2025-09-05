@@ -92,7 +92,7 @@ def main():
         md_file = file.read()
     st.markdown(md_file)
 
-    st.sidebar.title("Config")
+    st.sidebar.title("🔎 Anomaly Inspector Panel")
 
     app_custom_dataset = st.sidebar.checkbox("Custom dataset", False)
     if app_custom_dataset:
@@ -271,6 +271,36 @@ def st_redirect(src, dst, msg):
         finally:
             src.write = old_write
             placeholder.empty()
+
+# Expand sidebar width with custom CSS
+# Custom CSS for sidebar + main content layout
+st.markdown(
+    """
+    <style>
+    /* Sidebar width when open */
+    [data-testid="stSidebar"][aria-expanded="true"] {
+        min-width: 350px;
+        max-width: 400px;
+    }
+
+    /* Remove left margin when sidebar is closed */
+    [data-testid="stSidebar"][aria-expanded="false"] + div {
+        margin-left: 0 !important;
+    }
+
+    /* Ensure main container expands full width */
+    .block-container {
+        max-width: 100% !important;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+
 
 
 @contextmanager
